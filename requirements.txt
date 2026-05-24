@@ -1,0 +1,7 @@
+pandas
+scikit-learn
+python-dotenv
+supabase
+dvc
+dvc-s3
+mlflow
