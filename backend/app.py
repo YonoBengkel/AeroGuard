@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from dotenv import load_dotenv
+from sqlalchemy import UniqueConstraint
 
 # Memuat variabel dari .env
 load_dotenv()
@@ -34,7 +35,7 @@ class WilayahDetails(db.Model):
     nama_wilayah = db.Column(db.String(100), nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
-    
+    __table_args__ = (UniqueConstraint('latitude', 'longitude', name='uq_latitude_longitude'),)
     data_historis = db.relationship('DataHistoris', backref='wilayah', lazy=True)
     prediksi = db.relationship('Predictions', backref='wilayah', lazy=True)
 
@@ -79,20 +80,10 @@ class Predictions(db.Model):
     pred_kategori_ispu = db.Column(db.String(50))
     status = db.Column(db.String(50), default='PENDING')
     
-    validasi = db.relationship('ValidationsLogs', backref='prediksi_sumber', uselist=False)
-
-class ValidationsLogs(db.Model):
-    __tablename__ = 'validations_logs'
-    id_validasi = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    id_prediksi = db.Column(db.Integer, db.ForeignKey('predictions.id_prediksi'), unique=True, nullable=False)
-    id_data = db.Column(db.Integer, db.ForeignKey('data_historis.id_data'), nullable=False)
-    err_pm25 = db.Column(db.Float)
-    err_pm10 = db.Column(db.Float)
-    err_so2 = db.Column(db.Float)
-    err_co = db.Column(db.Float)
-    err_no2 = db.Column(db.Float)
-    err_ozon = db.Column(db.Float)
-    validated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # KUNCI UPSERT: Memastikan tidak ada 2 prediksi untuk wilayah & target waktu yang sama
+    __table_args__ = (
+        UniqueConstraint('id_wilayah', 'target_waktu', name='uix_wilayah_waktu'),
+    )
 
 if __name__ == '__main__':
     # Script kecil untuk mengetes apakah SQLAlchemy berhasil membaca Supabase
